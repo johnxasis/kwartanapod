@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Codeseer Swarm Launcher</title>
+  <style>
+    body {
+      background: black;
+      color: white;
+      font-family: sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+    }
+    .card {
+      background: linear-gradient(to bottom, #18181b, #000);
+      border: 1px solid #3f3f46;
+      padding: 2rem;
+      max-width: 480px;
+      text-align: center;
+    }
+    button {
+      background: #27272a;
+      border: 1px solid #fff;
+      color: white;
+      padding: 0.75rem 1.5rem;
+      cursor: not-allowed;
+    }
+    p {
+      color: #a1a1aa;
+      font-size: 0.875rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Codeseer Swarm Deployed</h1>
+    <p>Funnel logic, persona cluster & profit relay now active.<br>Auto-swarming in background...</p>
+    <button disabled>Auto-Swarming in Progress...</button>
+  </div>
+  <script>
+    fetch('/api/deploy-seed', { method: 'POST' });
+  </script>
+</body>
+</html>
