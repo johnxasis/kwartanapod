@@ -1,29 +1,27 @@
-import { initializeApp } from 'firebase/app';
-import { getDatabase, ref, update } from 'firebase/database';
-
-const firebaseConfig = {
-  apiKey: process.env.FIREBASE_API_KEY,
-  databaseURL: process.env.FIREBASE_DB_URL
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
-
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
 
-  const data = req.body;
-  if (!data) return res.status(400).json({ error: "Missing JSON body" });
+  const REDIS_URL = process.env.UPSTASH_REDIS_REST_URL;
+  const REDIS_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN;
+  const payload = req.body;
+
+  if (!payload || !REDIS_URL || !REDIS_TOKEN) {
+    return res.status(400).json({ error: "Missing body or Redis config" });
+  }
 
   try {
-    const updates = {};
-    for (const key in data) {
-      updates[`swarm/${key}`] = data[key];
+    const results = {};
+    for (const key in payload) {
+      const value = payload[key];
+      const r = await fetch(`${REDIS_URL}/set/${key}/${encodeURIComponent(value)}`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${REDIS_TOKEN}` }
+      });
+      const json = await r.json();
+      results[key] = json.result;
     }
-
-    await update(ref(db), updates);
-    return res.status(200).json({ status: "Swarm data updated", data });
+    return res.status(200).json({ updated: results });
   } catch (err) {
-    return res.status(500).json({ error: "Update failed", detail: err });
+    return res.status(500).json({ error: "Failed to update swarm", detail: err });
   }
 }
