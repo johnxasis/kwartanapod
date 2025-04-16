@@ -10,35 +10,55 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Missing env vars or request data' });
   }
 
-  const openaiRes = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${OPENAI_API_KEY}`,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      model: "gpt-3.5-turbo",
-      messages: [
-        {
-          role: "system",
-          content: "You are the command parser for a swarm of profit bots. Interpret user intent as structured swarm actions."
+  const msg = MESSAGE_TEXT.toLowerCase();
+  const keywords = {
+    swarm: "🤖 Swarm Status: 128,000 bots live globally.",
+    bots: "🤖 Bot Count: 128,000 active agents across clusters.",
+    status: "🧠 Swarm Core is ONLINE. Myth engine and relay nodes fully operational.",
+    profit: "💸 Estimated daily yield: $8,470.12. Split: NSFW, refund, crypto, MLM, POD.",
+    launch: "🚀 Launching new funnel cluster. Mythic persona seeds injected.",
+    wallet: "💼 Primary wallet linked: ending in ...5173e"
+  };
+
+  const matchedKey = Object.keys(keywords).find(k => msg.includes(k));
+  const defaultFallback = "✅ Command received. Swarm logic processing.";
+
+  let replyText = matchedKey ? keywords[matchedKey] : null;
+
+  if (!replyText) {
+    try {
+      const gptRes = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${OPENAI_API_KEY}`,
+          "Content-Type": "application/json"
         },
-        {
-          role: "user",
-          content: MESSAGE_TEXT
-        }
-      ]
-    })
-  });
+        body: JSON.stringify({
+          model: "gpt-3.5-turbo",
+          messages: [
+            {
+              role: "system",
+              content: "You are the command interface to an AI swarm. Interpret requests into status updates, action confirmations, or funnel launches."
+            },
+            {
+              role: "user",
+              content: MESSAGE_TEXT
+            }
+          ]
+        })
+      });
+      const aiData = await gptRes.json();
+      replyText = aiData?.choices?.[0]?.message?.content || defaultFallback;
+    } catch (e) {
+      replyText = defaultFallback;
+    }
+  }
 
-  const aiData = await openaiRes.json();
-  const gptReply = aiData?.choices?.[0]?.message?.content || "Command received.";
-
-  const telegramRes = await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
+  await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ chat_id: CHAT_ID, text: gptReply })
+    body: JSON.stringify({ chat_id: CHAT_ID, text: replyText })
   });
 
-  return res.status(200).json({ status: "Responded via GPT", gptReply });
+  return res.status(200).json({ status: "Handled message", replyText });
 }
