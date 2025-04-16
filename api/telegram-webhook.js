@@ -1,44 +1,40 @@
-import { initializeApp } from 'firebase/app';
-import { getDatabase, ref, get, child } from 'firebase/database';
-
-const firebaseConfig = {
-  apiKey: process.env.FIREBASE_API_KEY,
-  databaseURL: process.env.FIREBASE_DB_URL
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
-
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
 
   const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
   const CHAT_ID = req.body?.message?.chat?.id;
-  const MESSAGE_TEXT = req.body?.message?.text;
+  const MESSAGE_TEXT = req.body?.message?.text?.toLowerCase();
   const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+  const REDIS_URL = process.env.UPSTASH_REDIS_REST_URL;
+  const REDIS_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN;
 
-  if (!TELEGRAM_TOKEN || !CHAT_ID || !MESSAGE_TEXT || !OPENAI_API_KEY) {
-    return res.status(400).json({ error: 'Missing env vars or message data' });
+  if (!TELEGRAM_TOKEN || !CHAT_ID || !MESSAGE_TEXT || !REDIS_URL || !REDIS_TOKEN) {
+    return res.status(400).json({ error: "Missing Telegram, Redis, or message data" });
   }
 
-  const dbRef = ref(db);
-  const msg = MESSAGE_TEXT.toLowerCase();
+  const fetchRedis = async (key) => {
+    const r = await fetch(`${REDIS_URL}/get/${key}`, {
+      headers: { Authorization: `Bearer ${REDIS_TOKEN}` }
+    });
+    const json = await r.json();
+    return json.result || null;
+  };
+
+  let replyText = null;
 
   try {
-    let replyText = null;
-
-    if (msg.includes("bot")) {
-      const snapshot = await get(child(dbRef, 'swarm/botCount'));
-      replyText = `🤖 Active Bots: ${snapshot.val()}`;
-    } else if (msg.includes("profit")) {
-      const snapshot = await get(child(dbRef, 'swarm/dailyProfitUSD'));
-      replyText = `💸 Profit Today: $${snapshot.val()}`;
-    } else if (msg.includes("status")) {
-      const modeSnap = await get(child(dbRef, 'swarm/swarmMode'));
-      const pulseSnap = await get(child(dbRef, 'swarm/lastPulse'));
-      replyText = `🧠 Status: ${modeSnap.val().toUpperCase()} | Last Pulse: ${pulseSnap.val()}`;
+    if (MESSAGE_TEXT.includes("bot")) {
+      const count = await fetchRedis("botCount");
+      replyText = `🤖 Active Bots: ${count || 0}`;
+    } else if (MESSAGE_TEXT.includes("profit")) {
+      const profit = await fetchRedis("dailyProfitUSD");
+      replyText = `💸 Daily Profit: $${profit || "0.00"}`;
+    } else if (MESSAGE_TEXT.includes("status") || MESSAGE_TEXT.includes("mode")) {
+      const mode = await fetchRedis("swarmMode");
+      const pulse = await fetchRedis("lastPulse");
+      replyText = `🧠 Mode: ${mode?.toUpperCase() || "UNKNOWN"} | Last Pulse: ${pulse || "N/A"}`;
     } else {
-      const openaiRes = await fetch("https://api.openai.com/v1/chat/completions", {
+      const gptRes = await fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${OPENAI_API_KEY}`,
@@ -49,7 +45,7 @@ export default async function handler(req, res) {
           messages: [
             {
               role: "system",
-              content: "You are the AI command parser for a global bot swarm. Answer concisely and intelligently."
+              content: "You are the AI interface to a bot swarm. Provide helpful, clear, concise replies."
             },
             {
               role: "user",
@@ -58,8 +54,8 @@ export default async function handler(req, res) {
           ]
         })
       });
-      const aiData = await openaiRes.json();
-      replyText = aiData?.choices?.[0]?.message?.content || "✅ Command acknowledged.";
+      const ai = await gptRes.json();
+      replyText = ai?.choices?.[0]?.message?.content || "✅ Command received.";
     }
 
     await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
@@ -68,8 +64,8 @@ export default async function handler(req, res) {
       body: JSON.stringify({ chat_id: CHAT_ID, text: replyText })
     });
 
-    return res.status(200).json({ status: "Message processed", replyText });
-  } catch (e) {
-    return res.status(500).json({ error: "Failed to handle Telegram command", detail: e });
+    return res.status(200).json({ status: "Processed", replyText });
+  } catch (err) {
+    return res.status(500).json({ error: "Error in webhook", detail: err });
   }
 }
