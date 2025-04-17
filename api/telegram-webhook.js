@@ -88,18 +88,21 @@ Now respond ONLY with the JSON that would update Redis, based on this user input
       parseError = err.message;
     }
 
-    // If no valid JSON, try fallback: keyword + number
     if (Object.keys(updatePayload).length === 0) {
-      const numMatch = MESSAGE_TEXT.match(/(bot|profit|mode|pulse)[^\d\w\-]*(\d+(\.\d+)?|[a-z\-]+)/i);
-      if (numMatch) {
-        const key = numMatch[1].toLowerCase();
-        const rawValue = numMatch[2];
-        if (key === "bot") fallbackPayload = { botCount: parseInt(rawValue) };
-        if (key === "profit") fallbackPayload = { dailyProfitUSD: parseFloat(rawValue) };
-        if (key === "mode") fallbackPayload = { swarmMode: rawValue };
-        if (key === "pulse") fallbackPayload = { lastPulse: rawValue };
-        updatePayload = fallbackPayload;
+      if (MESSAGE_TEXT.includes("profit")) {
+        const num = MESSAGE_TEXT.match(/\d+(\.\d+)?/);
+        if (num) fallbackPayload.dailyProfitUSD = parseFloat(num[0]);
+      } else if (MESSAGE_TEXT.includes("bot")) {
+        const num = MESSAGE_TEXT.match(/\d+/);
+        if (num) fallbackPayload.botCount = parseInt(num[0]);
+      } else if (MESSAGE_TEXT.includes("mode")) {
+        const word = MESSAGE_TEXT.match(/mode[^a-zA-Z0-9]*([a-z\-]+)/);
+        if (word) fallbackPayload.swarmMode = word[1];
+      } else if (MESSAGE_TEXT.includes("pulse")) {
+        const ts = new Date().toISOString();
+        fallbackPayload.lastPulse = ts;
       }
+      updatePayload = fallbackPayload;
     }
 
     const keys = Object.keys(updatePayload);
@@ -122,7 +125,7 @@ Now respond ONLY with the JSON that would update Redis, based on this user input
       body: JSON.stringify({ chat_id: CHAT_ID, text: replyText })
     });
 
-    return res.status(200).json({ status: "Processed with final fallback", replyText });
+    return res.status(200).json({ status: "Processed with clean fallback", replyText });
   } catch (err) {
     return res.status(500).json({ error: "Webhook error", detail: err });
   }
