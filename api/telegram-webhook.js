@@ -29,7 +29,6 @@ export default async function handler(req, res) {
       const result = await r.json();
       return result;
     } catch (err) {
-      console.error("Redis SET error:", err);
       return { error: err.message };
     }
   };
@@ -75,12 +74,13 @@ Now respond ONLY with the JSON that would update Redis, based on this user input
     const gptReply = await gptRes.json();
     const content = gptReply?.choices?.[0]?.message?.content || "{}";
     let updatePayload = {};
+    let parseError = null;
 
     try {
       updatePayload = JSON.parse(content);
     } catch (err) {
       updatePayload = {};
-      console.error("Failed to parse GPT JSON:", content);
+      parseError = err.message;
     }
 
     const keys = Object.keys(updatePayload);
@@ -90,21 +90,12 @@ Now respond ONLY with the JSON that would update Redis, based on this user input
         const result = await setRedis(key, updatePayload[key]);
         results[key] = result;
       }
-      replyText = `✅ Swarm update attempt: ${JSON.stringify(updatePayload)}
+      replyText = `✅ GPT raw: ${content}
 
 🔁 Redis: ${JSON.stringify(results)}`;
-    } else if (MESSAGE_TEXT.includes("bot")) {
-      const count = await fetchRedis("botCount");
-      replyText = `🤖 Active Bots: ${count || 0}`;
-    } else if (MESSAGE_TEXT.includes("profit")) {
-      const profit = await fetchRedis("dailyProfitUSD");
-      replyText = `💸 Daily Profit: $${profit || "0.00"}`;
-    } else if (MESSAGE_TEXT.includes("status") || MESSAGE_TEXT.includes("mode")) {
-      const mode = await fetchRedis("swarmMode");
-      const pulse = await fetchRedis("lastPulse");
-      replyText = `🧠 Mode: ${mode?.toUpperCase() || "UNKNOWN"} | Last Pulse: ${pulse || "N/A"}`;
     } else {
-      replyText = "✅ Command received.";
+      replyText = `⚠️ GPT raw (unparsed): ${content}` + (parseError ? `
+❌ JSON parse error: ${parseError}` : "");
     }
 
     await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
@@ -113,9 +104,8 @@ Now respond ONLY with the JSON that would update Redis, based on this user input
       body: JSON.stringify({ chat_id: CHAT_ID, text: replyText })
     });
 
-    return res.status(200).json({ status: "Processed with debug", replyText });
+    return res.status(200).json({ status: "Processed with raw GPT debug", replyText });
   } catch (err) {
-    console.error("Webhook error:", err);
-    return res.status(500).json({ error: "Error in webhook", detail: err });
+    return res.status(500).json({ error: "Webhook error", detail: err });
   }
 }
