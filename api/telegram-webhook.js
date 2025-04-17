@@ -114,6 +114,22 @@ Now respond ONLY with the JSON that would update Redis, based on this user input
       }
       replyText = `✅ Final Update: ${JSON.stringify(updatePayload)}
 🔁 Redis: ${JSON.stringify(results)}`;
+    } else if (
+      MESSAGE_TEXT.match(/(what|show|how).*(profit)/i)
+    ) {
+      const profit = await fetchRedis("dailyProfitUSD");
+      replyText = `💸 Daily Profit: $${profit || "0.00"}`;
+    } else if (
+      MESSAGE_TEXT.match(/(what|show|how).*(bot)/i)
+    ) {
+      const bots = await fetchRedis("botCount");
+      replyText = `🤖 Active Bots: ${bots || "0"}`;
+    } else if (
+      MESSAGE_TEXT.match(/(what|show|how).*(mode|status)/i)
+    ) {
+      const mode = await fetchRedis("swarmMode");
+      const pulse = await fetchRedis("lastPulse");
+      replyText = `🧠 Mode: ${mode?.toUpperCase() || "UNKNOWN"} | Last Pulse: ${pulse || "N/A"}`;
     } else {
       replyText = `⚠️ No valid update intent detected.
 🧠 GPT said: ${content}`;
@@ -125,7 +141,7 @@ Now respond ONLY with the JSON that would update Redis, based on this user input
       body: JSON.stringify({ chat_id: CHAT_ID, text: replyText })
     });
 
-    return res.status(200).json({ status: "Processed with clean fallback", replyText });
+    return res.status(200).json({ status: "Processed with read triggers", replyText });
   } catch (err) {
     return res.status(500).json({ error: "Webhook error", detail: err });
   }
