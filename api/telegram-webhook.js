@@ -21,16 +21,22 @@ export default async function handler(req, res) {
   };
 
   const setRedis = async (key, value) => {
-    await fetch(`${REDIS_URL}/set/${key}/${encodeURIComponent(value)}`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${REDIS_TOKEN}` }
-    });
+    try {
+      const r = await fetch(`${REDIS_URL}/set/${key}/${encodeURIComponent(value)}`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${REDIS_TOKEN}` }
+      });
+      const result = await r.json();
+      return result;
+    } catch (err) {
+      console.error("Redis SET error:", err);
+      return { error: err.message };
+    }
   };
 
   let replyText = null;
 
   try {
-    // Ask GPT if this message includes an intent to update swarm state
     const prompt = `
 You're the command parser for a Redis-powered AI swarm. Interpret user messages and return JSON with any values they intend to update.
 
@@ -72,16 +78,21 @@ Now respond ONLY with the JSON that would update Redis, based on this user input
 
     try {
       updatePayload = JSON.parse(content);
-    } catch {
+    } catch (err) {
       updatePayload = {};
+      console.error("Failed to parse GPT JSON:", content);
     }
 
     const keys = Object.keys(updatePayload);
     if (keys.length > 0) {
+      const results = {};
       for (const key of keys) {
-        await setRedis(key, updatePayload[key]);
+        const result = await setRedis(key, updatePayload[key]);
+        results[key] = result;
       }
-      replyText = `✅ Swarm updated: ${keys.map(k => `${k} = ${updatePayload[k]}`).join(", ")}`;
+      replyText = `✅ Swarm update attempt: ${JSON.stringify(updatePayload)}
+
+🔁 Redis: ${JSON.stringify(results)}`;
     } else if (MESSAGE_TEXT.includes("bot")) {
       const count = await fetchRedis("botCount");
       replyText = `🤖 Active Bots: ${count || 0}`;
@@ -102,8 +113,9 @@ Now respond ONLY with the JSON that would update Redis, based on this user input
       body: JSON.stringify({ chat_id: CHAT_ID, text: replyText })
     });
 
-    return res.status(200).json({ status: "Processed", replyText });
+    return res.status(200).json({ status: "Processed with debug", replyText });
   } catch (err) {
+    console.error("Webhook error:", err);
     return res.status(500).json({ error: "Error in webhook", detail: err });
   }
 }
