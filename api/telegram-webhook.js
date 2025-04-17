@@ -74,11 +74,12 @@ Now respond ONLY with the JSON that would update Redis, based on this user input
     const gptReply = await gptRes.json();
     const content = gptReply?.choices?.[0]?.message?.content || "{}";
 
-    // Extract JSON using regex
+    // Try to extract clean JSON
     const match = content.match(/{[\s\S]*}/);
     const jsonString = match ? match[0] : "{}";
 
     let updatePayload = {};
+    let fallbackPayload = {};
     let parseError = null;
 
     try {
@@ -88,6 +89,20 @@ Now respond ONLY with the JSON that would update Redis, based on this user input
       parseError = err.message;
     }
 
+    // If JSON is empty, try fallback logic based on keywords
+    if (Object.keys(updatePayload).length === 0) {
+      const fallbackMatch = MESSAGE_TEXT.match(/(bot|profit|mode|pulse)[^\d\w]*(\d+(\.\d+)?|[a-z\-]+)/i);
+      if (fallbackMatch) {
+        const key = fallbackMatch[1].toLowerCase();
+        const value = fallbackMatch[2];
+        if (key === "bot") fallbackPayload = { botCount: parseInt(value) };
+        if (key === "profit") fallbackPayload = { dailyProfitUSD: parseFloat(value) };
+        if (key === "mode") fallbackPayload = { swarmMode: value };
+        if (key === "pulse") fallbackPayload = { lastPulse: value };
+        updatePayload = fallbackPayload;
+      }
+    }
+
     const keys = Object.keys(updatePayload);
     if (keys.length > 0) {
       const results = {};
@@ -95,11 +110,11 @@ Now respond ONLY with the JSON that would update Redis, based on this user input
         const result = await setRedis(key, updatePayload[key]);
         results[key] = result;
       }
-      replyText = `✅ Cleaned JSON: ${jsonString}
+      replyText = `✅ Final Update: ${JSON.stringify(updatePayload)}
 🔁 Redis: ${JSON.stringify(results)}`;
     } else {
-      replyText = `⚠️ Raw GPT: ${content}
-❌ JSON parse error: ${parseError}`;
+      replyText = `⚠️ No valid update intent detected.
+🧠 GPT said: ${content}`;
     }
 
     await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
@@ -108,7 +123,7 @@ Now respond ONLY with the JSON that would update Redis, based on this user input
       body: JSON.stringify({ chat_id: CHAT_ID, text: replyText })
     });
 
-    return res.status(200).json({ status: "Processed with JSON extractor", replyText });
+    return res.status(200).json({ status: "Processed with fallback", replyText });
   } catch (err) {
     return res.status(500).json({ error: "Webhook error", detail: err });
   }
