@@ -9,7 +9,7 @@ export default async function handler(req, res) {
   const REDIS_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN;
 
   if (!TELEGRAM_TOKEN || !CHAT_ID || !MESSAGE_TEXT || !REDIS_URL || !REDIS_TOKEN) {
-    return res.status(400).json({ error: "Missing Telegram, Redis, or message data" });
+    return res.status(400).json({ error: "Missing config or message data" });
   }
 
   const fetchRedis = async (key) => {
@@ -20,10 +20,69 @@ export default async function handler(req, res) {
     return json.result || null;
   };
 
+  const setRedis = async (key, value) => {
+    await fetch(`${REDIS_URL}/set/${key}/${encodeURIComponent(value)}`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${REDIS_TOKEN}` }
+    });
+  };
+
   let replyText = null;
 
   try {
-    if (MESSAGE_TEXT.includes("bot")) {
+    // Ask GPT if this message includes an intent to update swarm state
+    const prompt = `
+You're the command parser for a Redis-powered AI swarm. Interpret user messages and return JSON with any values they intend to update.
+
+Example:
+User: "update swarm to 30000 bots"
+Response: { "botCount": 30000 }
+
+User: "profit today is 842.75"
+Response: { "dailyProfitUSD": 842.75 }
+
+User: "change mode to cosmic"
+Response: { "swarmMode": "cosmic" }
+
+User: "hello there"
+Response: {}
+
+Now respond ONLY with the JSON that would update Redis, based on this user input:
+"${MESSAGE_TEXT}"
+`;
+
+    const gptRes = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${OPENAI_API_KEY}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: "gpt-3.5-turbo",
+        messages: [
+          { role: "system", content: "You interpret commands to update Redis swarm state." },
+          { role: "user", content: prompt }
+        ]
+      })
+    });
+
+    const gptReply = await gptRes.json();
+    const content = gptReply?.choices?.[0]?.message?.content || "{}";
+    let updatePayload = {};
+
+    try {
+      updatePayload = JSON.parse(content);
+    } catch {
+      updatePayload = {};
+    }
+
+    const keys = Object.keys(updatePayload);
+    if (keys.length > 0) {
+      for (const key of keys) {
+        await setRedis(key, updatePayload[key]);
+      }
+      replyText = `✅ Swarm updated: ${keys.map(k => `${k} = ${updatePayload[k]}`).join(", ")}`;
+    } else if (MESSAGE_TEXT.includes("bot")) {
       const count = await fetchRedis("botCount");
       replyText = `🤖 Active Bots: ${count || 0}`;
     } else if (MESSAGE_TEXT.includes("profit")) {
@@ -34,28 +93,7 @@ export default async function handler(req, res) {
       const pulse = await fetchRedis("lastPulse");
       replyText = `🧠 Mode: ${mode?.toUpperCase() || "UNKNOWN"} | Last Pulse: ${pulse || "N/A"}`;
     } else {
-      const gptRes = await fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${OPENAI_API_KEY}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          model: "gpt-3.5-turbo",
-          messages: [
-            {
-              role: "system",
-              content: "You are the AI interface to a bot swarm. Provide helpful, clear, concise replies."
-            },
-            {
-              role: "user",
-              content: MESSAGE_TEXT
-            }
-          ]
-        })
-      });
-      const ai = await gptRes.json();
-      replyText = ai?.choices?.[0]?.message?.content || "✅ Command received.";
+      replyText = "✅ Command received.";
     }
 
     await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
