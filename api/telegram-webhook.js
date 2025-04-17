@@ -73,11 +73,16 @@ Now respond ONLY with the JSON that would update Redis, based on this user input
 
     const gptReply = await gptRes.json();
     const content = gptReply?.choices?.[0]?.message?.content || "{}";
+
+    // Extract JSON using regex
+    const match = content.match(/{[\s\S]*}/);
+    const jsonString = match ? match[0] : "{}";
+
     let updatePayload = {};
     let parseError = null;
 
     try {
-      updatePayload = JSON.parse(content);
+      updatePayload = JSON.parse(jsonString);
     } catch (err) {
       updatePayload = {};
       parseError = err.message;
@@ -90,12 +95,11 @@ Now respond ONLY with the JSON that would update Redis, based on this user input
         const result = await setRedis(key, updatePayload[key]);
         results[key] = result;
       }
-      replyText = `✅ GPT raw: ${content}
-
+      replyText = `✅ Cleaned JSON: ${jsonString}
 🔁 Redis: ${JSON.stringify(results)}`;
     } else {
-      replyText = `⚠️ GPT raw (unparsed): ${content}` + (parseError ? `
-❌ JSON parse error: ${parseError}` : "");
+      replyText = `⚠️ Raw GPT: ${content}
+❌ JSON parse error: ${parseError}`;
     }
 
     await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
@@ -104,7 +108,7 @@ Now respond ONLY with the JSON that would update Redis, based on this user input
       body: JSON.stringify({ chat_id: CHAT_ID, text: replyText })
     });
 
-    return res.status(200).json({ status: "Processed with raw GPT debug", replyText });
+    return res.status(200).json({ status: "Processed with JSON extractor", replyText });
   } catch (err) {
     return res.status(500).json({ error: "Webhook error", detail: err });
   }
