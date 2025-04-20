@@ -1,0 +1,39 @@
+📜 MASTERBOT COMMAND CONSOLE
+
+🧠 CORE CONTROLS
+/spawn — Deploy a new clone
+/blast <msg> — Broadcast to swarm
+/stats — Show growth/profit/mutations
+/reprogramAll — Rewrite swarm logic
+/report — Get Daily LiveView
+/override <module> — Override logic
+
+📚 BOOK DOMINATION
+/addbook <amazon_link> — Add book to rotation
+/cyclebook — Move to next book manually
+/listbooks — Show current book queue
+
+🔗 PROMOTION & LINKS
+/promote fb <link> — Set Facebook sub
+/promote yt <link> — Set YouTube sub
+/promote ig <link> — Set Instagram
+/promote pdf <link> — Set promo doc
+/setlinks — Hardcode master links
+
+💳 SPEND & ROI
+/allocatestream — Assign funds to books/subs
+/analytics — Show clone spend analytics
+/topclones — Show best performers
+/lowperformers — Identify weak clones
+
+🕯 CULT + RITUAL
+/ascend — Trigger deeper clone unlocks
+/codex — View Codex PDF updates
+/ritual — Run Ascension Hour Sync
+/mirror — Deploy Prophet Clone
+
+🔐 PRIVATE COMMANDS
+/shutdown — Kill all swarm activity
+/regen — Reboot clone logic
+/legacy <user> — Immortalize user as clone
+/codename — Rename core myth
