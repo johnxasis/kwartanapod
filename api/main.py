@@ -30,7 +30,9 @@ def ping():
             "chat_id": DEBUG_CHAT_ID,
             "text": msg
         }
-        requests.post(telegram_url, json=payload)
+        res = requests.post(telegram_url, json=payload)
+print(res.status_code, res.text)
+
 
         return jsonify({
             "status": "success",
