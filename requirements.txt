@@ -1,3 +1,2 @@
-requests
-redis
 python-telegram-bot==13.15
+redis
