@@ -1,0 +1,1 @@
+// GPT auto-product (ebook, PDF) writer + uploader logic
