@@ -1,0 +1,5 @@
+{
+  "codeRepos": ["GitHub", "GitLab", "Codeberg"],
+  "hosting": ["Vercel", "Replit", "Cloudflare Pages"],
+  "backupDB": ["Upstash", "PlanetScale"]
+}
