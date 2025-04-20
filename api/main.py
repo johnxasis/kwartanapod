@@ -15,7 +15,8 @@ UPSTASH_REDIS_URL = os.getenv("UPSTASH_REDIS_REST_URL")
 UPSTASH_REDIS_REST_TOKEN = os.getenv("UPSTASH_REDIS_REST_TOKEN")
 
 # === REDIS INIT ===
-r = redis.Redis.from_url(f"{UPSTASH_REDIS_URL}?password={UPSTASH_REDIS_REST_TOKEN}")
+r = redis.from_url(UPSTASH_REDIS_URL)
+
 
 @app.route("/")
 def root():
