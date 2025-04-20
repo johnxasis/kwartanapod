@@ -1,7 +1,11 @@
+# 📂 FILE: api/main.py (DEBUG VERSION)
+# ✅ Vercel-Compatible Python Serverless Function w/Crash Logging
+
 import os
 import json
 import redis
 import telegram
+import traceback
 
 def handler(request):
     try:
@@ -10,28 +14,32 @@ def handler(request):
         UPSTASH_REDIS_TOKEN = os.getenv("UPSTASH_REDIS_REST_TOKEN")
         DEBUG_CHAT_ID = os.getenv("DEBUG_CHAT_ID")
 
+        if not TELEGRAM_TOKEN or not UPSTASH_REDIS_URL or not UPSTASH_REDIS_TOKEN or not DEBUG_CHAT_ID:
+            raise ValueError("One or more environment variables are missing.")
+
         r = redis.Redis.from_url(f"{UPSTASH_REDIS_URL}?password={UPSTASH_REDIS_TOKEN}")
         bot = telegram.Bot(token=TELEGRAM_TOKEN)
 
-        # Get swarm stats from Redis
         bots = int(r.get("bots") or 0)
         earnings = float(r.get("earnings") or 0)
 
-        # Send update to your Telegram (you can remove this line if unnecessary)
-        if DEBUG_CHAT_ID:
-            bot.send_message(chat_id=DEBUG_CHAT_ID, text=f"✅ Swarm Active\n🧠 Bots: {bots}\n💸 Earnings: ${earnings}")
+        bot.send_message(chat_id=DEBUG_CHAT_ID, text=f"✅ Swarm Debug Online\nBots: {bots}\nEarnings: ${earnings}")
 
         return {
             "statusCode": 200,
             "body": json.dumps({
-                "message": "Swarm Ping Successful",
+                "message": "✅ Swarm Ping Successful",
                 "bots": bots,
                 "earnings": earnings
             })
         }
 
     except Exception as e:
+        error_trace = traceback.format_exc()
         return {
             "statusCode": 500,
-            "body": json.dumps({ "error": str(e) })
+            "body": json.dumps({
+                "error": str(e),
+                "trace": error_trace
+            })
         }
