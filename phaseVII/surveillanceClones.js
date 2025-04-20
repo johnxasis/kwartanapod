@@ -1,1 +1,0 @@
-// Listener bots scraping Reddit, BHW, PH, X for trends

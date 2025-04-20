@@ -1,1 +1,0 @@
-// Earnings spy + redirect

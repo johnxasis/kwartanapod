@@ -1,1 +1,0 @@
-// Crypto checkout with NOWPayments

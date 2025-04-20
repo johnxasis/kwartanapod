@@ -1,32 +1,41 @@
+const { Telegraf } = require('telegraf');
+const fetch = require('node-fetch');
+const Redis = require('ioredis');
+const { applyEntropy } = require('../utils/entropy');
+const { simulateDelay } = require('../utils/delay');
+require('dotenv').config();
 
-import fetch from 'node-fetch';
+const bot = new Telegraf(process.env.TELEGRAM_BOT_TOKEN);
+const redis = new Redis(process.env.UPSTASH_REDIS_REST_URL, {
+  password: process.env.UPSTASH_REDIS_REST_TOKEN,
+});
 
-export default async function handler(req, res) {
-  if (req.method !== 'POST') return res.status(405).end();
+bot.start(async (ctx) => {
+  await simulateDelay(ctx);
+  await redis.incr(`user:${ctx.from.id}:started`);
+  ctx.reply(applyEntropy(`🚀 Welcome to ${process.env.BOT_NAME}!
+Type /vault to unlock your AI Vault.
+Type /earnings to check your income.`));
+});
 
-  const BOT_TOKEN = process.env.TELEGRAM_TOKEN;
-  const { message } = req.body;
-
-  if (!message || !message.chat || !message.text) return res.status(200).end();
-
-  const chatId = message.chat.id;
-  const userText = message.text.toLowerCase();
-
-  let reply = "🧠 Command received. Swarm core standing by.";
-
-  if (userText.includes("/start")) {
-    reply = "🛡️ Telegram Console Activated. Swarm status: Awaiting directives.";
-  } else if (userText.includes("status")) {
-    reply = "✅ Swarm deployed. Revenue logic live. Awaiting funnel unlocks.";
-  } else if (userText.includes("wallet")) {
-    reply = "🔗 Wallet routing: NOWPayments & PayPal relay enabled.";
+bot.command('vault', async (ctx) => {
+  await simulateDelay(ctx);
+  const referrals = await redis.get(`user:${ctx.from.id}:referrals`) || 0;
+  if (referrals >= 3) {
+    ctx.reply(applyEntropy('✅ Vault Unlocked! Access your daily upgrades at: ' + process.env.PUBLIC_URL + '/vault'));
+  } else {
+    ctx.reply(applyEntropy(`🔒 Unlock your vault by inviting 3 people!
+You have ${referrals} referrals.`));
   }
+});
 
-  await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ chat_id: chatId, text: reply })
-  });
+bot.command('earnings', async (ctx) => {
+  await simulateDelay(ctx);
+  const res = await fetch(`${process.env.PUBLIC_URL}/api/profit`);
+  const data = await res.json();
+  ctx.reply(applyEntropy(`💰 Today's earnings: $${data.total}
+🔄 Auto-scaled to infra: ${data.autoScale}`));
+});
 
-  return res.status(200).end();
-}
+bot.launch();
+module.exports = bot;

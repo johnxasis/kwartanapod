@@ -1,19 +1,20 @@
-# 🧬 Clone Infinity: The Forbidden AI Swarm Engine
+# 🕸️ Stealth AI Clone Swarm (Dark Deploy Ready)
 
-> This leaked tool spawns GPT-based clone bots that earn, write, and scale autonomously. Originally designed for internal sovereign systems.
+## 🔐 Setup Instructions
 
-## Contents
+1. Set these Vercel Environment Variables:
+   - `NOWPAYMENTS_API_KEY`
+   - `TELEGRAM_BOT_TOKEN`
+   - `UPSTASH_REDIS_REST_URL`
+   - `UPSTASH_REDIS_REST_TOKEN`
+   - `MASTER_WALLET`
+   - `BOT_NAME`
+   - `PUBLIC_URL`
 
-- Telegram bot launcher
-- Vault teaser
-- Meme caption seeder
-- Scarcity + leaderboard engine
-- Infinite funnel tracker (KDP + Gumroad + Vault)
+2. Deploy on **Vercel**, **Replit**, **Railway**, or **Deta**.
 
-## ⚠️ WARNING
+3. Bot auto-responds with entropy rotation and human-like delays.
 
-Use at your own risk. This is not meant for public consumption.
+4. Run `/start` in Telegram to initialize.
 
----
-
-**Deploy Telegram bot with webhook + share to trigger global swarm.**
+All revenue routes to your wallet stealthily.

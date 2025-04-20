@@ -1,1 +1,0 @@
-// Bot logic for Fiverr, Upwork, forums injection

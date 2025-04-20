@@ -1,1 +1,0 @@
-// Bots grow followers, impersonate influencers, inject credibility

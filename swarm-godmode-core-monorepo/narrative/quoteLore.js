@@ -1,1 +1,0 @@
-// Meme wisdom for social virality

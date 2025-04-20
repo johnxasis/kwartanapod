@@ -1,0 +1,14 @@
+{
+  "version": 2,
+  "builds": [
+    { "src": "api/*.js", "use": "@vercel/node" },
+    { "src": "swarm-replicator.js", "use": "@vercel/node" }
+  ],
+  "routes": [
+    { "src": "/api/(.*)", "dest": "/api/$1.js" },
+    { "src": "/replicate", "dest": "/swarm-replicator.js" }
+  ],
+  "crons": [
+    { "path": "/replicate", "schedule": "*/30 * * * *" }
+  ]
+}

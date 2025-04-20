@@ -1,0 +1,14 @@
+{
+  "cron": [
+    {
+      "name": "PullLatestCode",
+      "path": "/sync",
+      "schedule": "0 * * * *"
+    },
+    {
+      "name": "RotateVault",
+      "path": "/rotate",
+      "schedule": "0 */3 * * *"
+    }
+  ]
+}
