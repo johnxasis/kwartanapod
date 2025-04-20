@@ -1,0 +1,1 @@
+// Fingerprint cloaking for bots
