@@ -1,0 +1,1 @@
+// Shows current earning cap + bot unlocks
