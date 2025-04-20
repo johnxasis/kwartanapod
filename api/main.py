@@ -1,45 +1,49 @@
-# 📂 FILE: api/main.py (DEBUG VERSION)
-# ✅ Vercel-Compatible Python Serverless Function w/Crash Logging
+# 📂 FILE: api/main.py (FLASK DEPLOY MODE)
+# ✅ No serverless issues, compatible with Vercel, Railway, or Deta
 
+from flask import Flask, jsonify
 import os
-import json
 import redis
-import telegram
-import traceback
+import requests
 
-def handler(request):
+app = Flask(__name__)
+
+# === ENVIRONMENT VARIABLES ===
+TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
+DEBUG_CHAT_ID = os.getenv("DEBUG_CHAT_ID")
+UPSTASH_REDIS_URL = os.getenv("UPSTASH_REDIS_REST_URL")
+UPSTASH_REDIS_TOKEN = os.getenv("UPSTASH_REDIS_REST_TOKEN")
+
+# === REDIS INIT ===
+r = redis.Redis.from_url(f"{UPSTASH_REDIS_URL}?password={UPSTASH_REDIS_TOKEN}")
+
+# === BOT PING ROUTE ===
+@app.route("/ping")
+def ping():
     try:
-        TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
-        UPSTASH_REDIS_URL = os.getenv("UPSTASH_REDIS_REST_URL")
-        UPSTASH_REDIS_TOKEN = os.getenv("UPSTASH_REDIS_REST_TOKEN")
-        DEBUG_CHAT_ID = os.getenv("DEBUG_CHAT_ID")
-
-        if not TELEGRAM_TOKEN or not UPSTASH_REDIS_URL or not UPSTASH_REDIS_TOKEN or not DEBUG_CHAT_ID:
-            raise ValueError("One or more environment variables are missing.")
-
-        r = redis.Redis.from_url(f"{UPSTASH_REDIS_URL}?password={UPSTASH_REDIS_TOKEN}")
-        bot = telegram.Bot(token=TELEGRAM_TOKEN)
-
         bots = int(r.get("bots") or 0)
         earnings = float(r.get("earnings") or 0)
 
-        bot.send_message(chat_id=DEBUG_CHAT_ID, text=f"✅ Swarm Debug Online\nBots: {bots}\nEarnings: ${earnings}")
-
-        return {
-            "statusCode": 200,
-            "body": json.dumps({
-                "message": "✅ Swarm Ping Successful",
-                "bots": bots,
-                "earnings": earnings
-            })
+        msg = f"✅ Gospel Swarm is LIVE!\n🤖 Bots: {bots}\n💸 Earnings: ${earnings}"
+        telegram_url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
+        payload = {
+            "chat_id": DEBUG_CHAT_ID,
+            "text": msg
         }
+        requests.post(telegram_url, json=payload)
 
+        return jsonify({
+            "status": "success",
+            "message": msg,
+            "bots": bots,
+            "earnings": earnings
+        })
     except Exception as e:
-        error_trace = traceback.format_exc()
-        return {
-            "statusCode": 500,
-            "body": json.dumps({
-                "error": str(e),
-                "trace": error_trace
-            })
-        }
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route("/")
+def root():
+    return jsonify({"message": "🧠 Gospel Swarm Flask Server is Online."})
+
+if __name__ == "__main__":
+    app.run(debug=True)
