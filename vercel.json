@@ -1,1 +1,11 @@
-{"rewrites": [{"source": "/api/(.*)", "destination": "/api/$1"}]}
+{
+  "version": 2,
+  "functions": {
+    "api/telegram.js": {
+      "runtime": "nodejs18.x"
+    }
+  },
+  "routes": [
+    { "src": "/api/telegram", "dest": "/api/telegram.js" }
+  ]
+}
