@@ -1,24 +1,26 @@
+const token = process.env.TELEGRAM_BOT_TOKEN;
+
 export default async function handler(req, res) {
   if (req.method === 'POST') {
     const message = req.body?.message;
-    const text = message?.text || 'No message';
     const chatId = message?.chat?.id;
+    const text = message?.text;
 
-    console.log(`💬 Received: ${text} from Chat ID: ${chatId}`);
+    console.log(`💬 Incoming from ${chatId}: ${text}`);
 
-    if (chatId && text.toLowerCase() === 'start') {
-      await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
+    if (text?.toLowerCase() === 'start') {
+      await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           chat_id: chatId,
-          text: '✅ Bot received your message!'
+          text: '👋 Hello, I received your /start command!'
         })
       });
     }
 
-    res.status(200).send('OK');
-  } else {
-    res.status(405).send({ error: 'Method not allowed' });
+    return res.status(200).send('OK');
   }
+
+  res.status(405).send({ error: 'Method Not Allowed' });
 }
