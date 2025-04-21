@@ -1,39 +1,35 @@
-export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
-
+module.exports = async (req, res) => {
   try {
-    const body = req.body;
-
-    if (!body || !body.message || !body.message.text) {
-      return res.status(200).send('No actionable message.');
+    if (req.method !== 'POST') {
+      return res.status(405).json({ error: 'Method not allowed' });
     }
 
-    const message = body.message.text;
-    const chatId = body.message.chat.id;
+    const body = req.body;
+    console.log("Incoming Telegram Update:", JSON.stringify(body, null, 2));
 
-    // Echo logic (replace this with your bot logic)
-    const reply = `🧠 SwarmBot received: "${message}"`;
+    const message = body?.message?.text;
+    const chatId = body?.message?.chat?.id;
 
-    const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-    const sendMessageUrl = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+    if (!chatId || !message) {
+      console.error("Missing chatId or message.");
+      return res.status(400).json({ error: "Invalid Telegram data" });
+    }
 
-    const payload = {
-      chat_id: chatId,
-      text: reply,
-    };
-
-    await fetch(sendMessageUrl, {
+    const resp = await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
+      body: JSON.stringify({
+        chat_id: chatId,
+        text: `🧠 SwarmBot received: "${message}"`
+      })
     });
 
-    res.status(200).json({ ok: true, message: 'Replied to user.' });
+    const data = await resp.json();
+    console.log("Telegram sendMessage response:", data);
 
-  } catch (error) {
-    console.error('❌ Telegram bot error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(200).json({ ok: true });
+  } catch (err) {
+    console.error("Handler crashed:", err);
+    res.status(500).json({ error: "Internal Server Error" });
   }
-}
+};
