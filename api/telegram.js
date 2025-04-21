@@ -1,12 +1,9 @@
-const express = require('express');
-const app = express();
-
-app.use(express.json());
-
-app.post('/', (req, res) => {
-  const message = req.body?.message?.text || 'No message';
-  console.log(`Telegram Message: ${message}`);
-  res.send('OK'); // Respond so Telegram stops complaining
-});
-
-module.exports = app;
+export default function handler(req, res) {
+  if (req.method === "POST") {
+    const msg = req.body?.message?.text;
+    console.log("Telegram Message:", msg);
+    res.status(200).send("OK");
+  } else {
+    res.status(405).send("Method Not Allowed");
+  }
+}
