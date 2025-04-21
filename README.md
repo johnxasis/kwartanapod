@@ -1,3 +1,3 @@
-# Kwartanapod
+# KwartaNaPod
 
-Clean version ready for GitHub upload.
+Deployed via Vercel — clean version with /api/telegram.
