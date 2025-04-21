@@ -1,17 +1,12 @@
-export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method Not Allowed' });
-  }
+const express = require('express');
+const app = express();
 
-  try {
-    const message = req.body?.message?.text || 'No message';
-    console.log(`📥 Telegram Message: ${message}`);
+app.use(express.json());
 
-    // You can add logic here to reply, log, etc.
+app.post('/', (req, res) => {
+  const message = req.body?.message?.text || 'No message';
+  console.log(`Telegram Message: ${message}`);
+  res.send('OK'); // Respond so Telegram stops complaining
+});
 
-    res.status(200).send('OK');
-  } catch (error) {
-    console.error('❌ Error handling Telegram webhook:', error);
-    res.status(500).send('Internal Server Error');
-  }
-}
+module.exports = app;
