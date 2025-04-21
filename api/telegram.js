@@ -1,26 +1,11 @@
-const token = process.env.TELEGRAM_BOT_TOKEN;
+import express from "express";
+const app = express();
+app.use(express.json());
 
-export default async function handler(req, res) {
-  if (req.method === 'POST') {
-    const message = req.body?.message;
-    const chatId = message?.chat?.id;
-    const text = message?.text;
+app.post("/", (req, res) => {
+    const message = req.body?.message?.text || "No message";
+    console.log(`Telegram Message: ${message}`);
+    res.status(200).send("OK");
+});
 
-    console.log(`💬 Incoming from ${chatId}: ${text}`);
-
-    if (text?.toLowerCase() === 'start') {
-      await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          chat_id: chatId,
-          text: '👋 Hello, I received your /start command!'
-        })
-      });
-    }
-
-    return res.status(200).send('OK');
-  }
-
-  res.status(405).send({ error: 'Method Not Allowed' });
-}
+export default app;
