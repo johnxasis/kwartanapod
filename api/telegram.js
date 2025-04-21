@@ -1,23 +1,13 @@
-export default async function handler(req, res) {
-  if (req.method === "POST") {
-    const message = req.body.message?.text;
-    const chatId = req.body.message?.chat.id;
+const express = require('express');
+const app = express();
 
-    if (message && chatId) {
-      // Example reply using fetch
-      const url = `https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`;
-      await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          chat_id: chatId,
-          text: `SwarmBot received: "${message}"`,
-        }),
-      });
-    }
+app.use(express.json());
 
-    return res.status(200).send("OK");
-  } else {
-    return res.status(405).json({ error: "Method not allowed" });
-  }
-}
+app.post('/', (req, res) => {
+  const message = req.body?.message?.text || 'No message';
+  console.log(`Telegram Message: ${message}`);
+  res.send('OK'); // Respond so Telegram stops complaining
+});
+
+// Export handler for Vercel
+module.exports = app;
