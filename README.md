@@ -1,20 +1,10 @@
-# 🕸️ Stealth AI Clone Swarm (Dark Deploy Ready)
+# Gospel Swarm Deployer
 
-## 🔐 Setup Instructions
+A fully automated, upgradable, hands-free bot swarm system.
 
-1. Set these Vercel Environment Variables:
-   - `NOWPAYMENTS_API_KEY`
-   - `TELEGRAM_BOT_TOKEN`
-   - `UPSTASH_REDIS_REST_URL`
-   - `UPSTASH_REDIS_REST_TOKEN`
-   - `MASTER_WALLET`
-   - `BOT_NAME`
-   - `PUBLIC_URL`
-
-2. Deploy on **Vercel**, **Replit**, **Railway**, or **Deta**.
-
-3. Bot auto-responds with entropy rotation and human-like delays.
-
-4. Run `/start` in Telegram to initialize.
-
-All revenue routes to your wallet stealthily.
+## Deployment Instructions:
+1. Replace `.env` values with your API keys.
+2. Push this project to GitHub using GitHub Desktop.
+3. Connect GitHub repo to Vercel.
+4. Add all `.env` variables to Vercel dashboard.
+5. Deploy. Your bot swarm is now live.

@@ -1,5 +1,0 @@
-flask
-waitress
-requests
-redis
-python-telegram-bot
