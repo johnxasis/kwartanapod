@@ -1,14 +1,6 @@
-const express = require("express");
-const bodyParser = require("body-parser");
-const { handleTelegramUpdate } = require("./swarmEngine");
-
+const express = require('express');
+const { handleTelegramWebhook } = require('./lib/autopilot');
 const app = express();
-app.use(bodyParser.json());
-
-app.post("/api/telegram", async (req, res) => {
-    const update = req.body;
-    const response = await handleTelegramUpdate(update);
-    res.status(200).send(response);
-});
-
-module.exports = app;
+app.use(express.json());
+app.post('/api/telegram', handleTelegramWebhook);
+app.listen(3000, () => console.log("SwarmBot v1.5-AutoOps live."));
